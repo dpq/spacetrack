@@ -1,0 +1,49 @@
+application: xientific-spacetrack
+version: 1
+runtime: python
+api_version: 1
+
+default_expiration: "1d"
+
+handlers:
+- url: /
+  static_files: index.html
+  upload: index\.html
+
+- url: /script
+  static_dir: script
+
+- url: /style/basic\.css
+  static_files: basic.css
+  upload: basic\.css
+
+- url: /update|/update/.*/.*|/download/.*|/counter
+  script: update.py
+  login: admin
+
+- url: /directory/.*|/tle/.*|/count|/name/.*|/age/.*  #/details/.*|
+  script: server.py
+
+- url: /remote_api
+  script: $PYTHON_LIB/google/appengine/ext/remote_api/handler.py
+  login: admin
+
+- url: /favicon\.ico
+  static_files: img/favicon.ico
+  upload: img/favicon\.ico
+
+- url: /logo\.gif
+  static_files: img/logo.gif
+  upload: img/logo\.gif
+
+- url: /home\.png
+  static_files: img/home.png
+  upload: img/home\.png
+
+- url: /(.*)
+  static_files: comingsoon.html
+  upload: comingsoon.html
+
+
+derived_file_type:
+- python_precompiled

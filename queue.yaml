@@ -1,0 +1,7 @@
+queue:
+- name: default
+  rate: 5/s
+  bucket_size: 30
+- name: download
+  rate: 2/s
+  bucket_size: 4

@@ -1,0 +1,4 @@
+cron:
+- description: Fetch new TLE data from Celestrak
+  url: /update
+  schedule: every 12 hours

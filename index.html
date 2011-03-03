@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Real time satellite tracking</title>
+
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<!--<meta name="google-site-verification" content="q9R77_MbjlLi9_yGK4kdNuh6JzhFl65_Qkz0V0Ye1x4" />-->
+<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+
+<link rel="stylesheet" href="style/basic.css" />
+
+<!-- Load the correct Google AJAX API key for this domain -->
+<script type="text/javascript">
+var googleApiKeys = [];
+googleApiKeys['http://xientific-spacetrack.appspot.com/'] = 'ABQIAAAAhsZQQFX8lq5cD5KMOubFVRQy8EK-QuFyaBcRzAyxbgYwwEphrBQnK7dlLMYuAqBFR9T6X715y3JQwQ';
+googleApiKeys['http://spacetrack.xientific.info/'] = 'ABQIAAAAhsZQQFX8lq5cD5KMOubFVRRRwX5TxN0CFbVNSw1pr3FiDa71mhQauutOcJsIlMcaNbbsi5RMeuDQNA';
+document.write(unescape("%3Cscript type='text/javascript' src='http://www.google.com/jsapi?key=" + googleApiKeys[location.protocol + "//" + location.host + "/"] + "'%3E %3C/script%3E"));
+</script>
+<script type="text/javascript">
+google.load("jquery", "1.4.2");
+google.load("maps", "3", {other_params:"sensor=false"});
+</script>
+
+<!-- TODO Google Analytics -->
+
+<script type="text/javascript" src="http://www.google.com/recaptcha/api/js/recaptcha_ajax.js"></script>
+<script type="text/javascript" src="script/predictlib.js"></script>
+
+<script type="text/javascript" src="script/marker.js"></script>
+<script type="text/javascript" src="script/infobox.js"></script>
+<script type="text/javascript" src="script/track.js"></script>
+<script type="text/javascript" src="script/footprint.js"></script>
+<script type="text/javascript">
+
+var map = {};
+var init = true;
+var currentPage = "";
+
+function pollHash() {
+    if (location.hash == currentPage) {
+        return;
+    }
+    $("span" + currentPage).css("color", "black");
+    $("div" + currentPage + "_page").css("display", "none");
+    currentPage = location.hash;
+    $("span" + currentPage).css("color", "#0D609E");
+    $("div" + currentPage + "_page").css("display", "block");
+}
+
+setInterval(pollHash, 200);
+
+
+function rotate(vector, satInfo) {
+    return rotateXY(rotateXZ(vector, deg2rad(90 - satInfo.latitude)), deg2rad(satInfo.longitude));
+}
+
+function rotateXY(vector, angle) {
+    return [ Math.cos(angle)*vector[0] - Math.sin(angle)*vector[1], Math.cos(angle)*vector[1] + Math.sin(angle)*vector[0], vector[2] ];
+}
+
+function rotateXZ(vector, angle) {
+    return [ Math.cos(angle)*vector[0] + Math.sin(angle)*vector[2], vector[1], Math.cos(angle)*vector[2] - Math.sin(angle)*vector[0] ];
+}
+
+//function rotateYZ(vector, angle) {
+//    return [ vector[0], Math.cos(angle)*vector[1] - Math.sin(angle)*vector[2], Math.cos(angle)*vector[2] + Math.sin(angle)*vector[0] ];
+//}
+
+function trimLeft(str) {
+    var ListOfWhiteSpaceChars = "0";
+    var k = 0;
+    while (k < str.length) {
+        if (ListOfWhiteSpaceChars.indexOf(str.charAt(k)) == -1) {
+            return str.substring(k, str.length);
+        }
+        else {
+            k++;
+        }
+    }
+}
+
+function mkYear(yr) {
+    if (yr == "00") {
+        return 2000;
+    }
+    else {
+        var year = parseInt(trimLeft(yr));
+        if (year < 57) {
+            year += 2000;
+        }
+        else {
+            year += 1900;
+        }
+        return year;
+    }
+}
+
+function isNumeric(str) {
+    var validChars = "0123456789";
+    var isNumber = true;
+    var ch;
+    for (var i = 0; i < str.length && isNumber == true; i++) {
+        ch = str.charAt(i); 
+        if (validChars.indexOf(ch) == -1) {
+        isNumber = false;
+        }
+    }
+    return isNumber;
+}
+
+function rad2deg(x) {
+    return x*180.0/Math.PI;
+}
+
+function deg2rad(x) {
+    return x*Math.PI/180.0;
+}
+
+function distHaversine(p1, p2) {
+  var R = 6371; // Earth's mean radius in km
+  var dLat  = deg2rad(p2.lat() - p1.lat());
+  var dLong = deg2rad(p2.lng() - p1.lng());
+
+  var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+          Math.cos(deg2rad(p1.lat())) * Math.cos(deg2rad(p2.lat())) * Math.sin(dLong/2) * Math.sin(dLong/2);
+  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  var d = R * c;
+
+  return d;
+}
+
+function cart2sph(vector) {
+    var x = vector[0], y = vector[1], z = vector[2];
+    var lat, lon;
+    var pi = 3.1415;
+    if ((x == 0) && (y == 0)) {
+        if (z > 0) {
+            lat = 90;
+        }
+        else {
+            lat = -90;
+        }
+    }
+    else {
+        lat = rad2deg(Math.atan(z / Math.sqrt(x*x + y*y)));
+    }
+    if (x == 0) {
+        if (y > 0) {
+            lon = 90;
+        }
+        else {
+            lon = -90;
+        }
+    }
+    else if (x > 0) {
+        lon = rad2deg(Math.atan(y/x));
+    }
+    else {
+        lon = rad2deg(pi + Math.atan(y/x));
+    }
+    if (lat > 85) {
+        lat = 85;
+    }
+    else if (lat < -85) {
+        lat = -85;
+    }
+    return new google.maps.LatLng(lat, lon);
+}
+
+
+function initialize() {
+    /* Initialize container size */
+    $("#sats").css("height", ($(window).height() - 460) + "px");
+    $(".page").css("height", ($(window).height() - 110) + "px");
+    $(".page").css("width", ($(window).width() - 255) + "px");
+    $(window).bind("resize", function() {
+        $("#sats").css("height", ($(window).height() - 460) + "px");
+        $(".page").css("height", ($(window).height() - 110) + "px");
+        $(".page").css("width", ($(window).width() - 255) + "px");
+        if (location.hash != "#tracker") {
+            // FIXME
+        }
+    });
+
+    /* Initialize object count */
+    $("#count").load("/count");
+
+    /* Initialize clock */
+    var dt = new Date();
+    $("#ut").text(dt.toUTCString());
+    $("#lt").text(dt.toString());
+
+    /* Initialize page switching */
+    if (location.hash == "") {
+        location.hash = "tracker";
+    }
+    currentPage = location.hash.replace("#", "#_");
+    $("span" + currentPage).css("color", "#0D609E");
+    $("div" + currentPage + "_page").css("display", "block");
+    $("span.section").click(function(e) {
+        $("span" + currentPage).css("color", "black");
+        $("div" + currentPage + "_page").css("display", "none");
+        location.hash = "#" + this.id.replace("_", "");
+        currentPage = location.hash;
+        $("span" + currentPage).css("color", "#0D609E");
+        $("div" + currentPage + "_page").css("display", "block");
+        e.stopPropagation();
+        return false;
+    });
+
+  /* Initializing the maps module when the div is not visible leads to very buggy behavior */
+    if (location.hash == "#tracker") {
+        setTimeout("initMaps()", 500);
+    }
+    else {
+        $("span#_tracker").bind("click", function() {
+          setTimeout("initMaps()", 500);
+        });
+    }
+}
+
+
+function initMaps() {
+
+  /* Initialize Google Maps */
+  var options = {
+    zoom: 2,
+    center: new google.maps.LatLng(0, 0),
+    mapTypeId: google.maps.MapTypeId.SATELLITE,
+    mapTypeControl: false
+  }
+  map = new google.maps.Map(document.getElementById("tracker_page"), options);
+
+
+  google.maps.event.addListener(map, "zoom_changed", function() {
+    if (map.getZoom() > 6) {
+        map.setZoom(6);
+    };
+  });
+
+    /* If the user attempts panning the map, stop following the current satellite */
+     google.maps.event.addListener(map, "dragstart", function() {
+         followSatellite = "";
+     });
+
+  google.maps.event.addListener(map, "click", function() {
+    followSatellite = "";
+    infobox.close();
+  });
+
+  /*
+  if (geoip_latitude() && geoip_longitude()) {
+    var marker = new google.maps.Marker({
+        icon: new google.maps.MarkerImage("/home.png", new google.maps.Size(24, 24), new google.maps.Point(0, 0),  new google.maps.Point(12, 12)),
+        position: new google.maps.LatLng(geoip_latitude(), geoip_longitude()),
+        title: geoip_latitude() + " : " + geoip_longitude(),
+        map: map
+    });
+    
+  } */
+  /* Configure the predict library */
+  PLib.configureGroundStation(0, 0);
+
+  $("span#_tracker").unbind("click", initMaps);
+
+  infobox = new google.maps.InfoWindow();
+
+  $("#sats input:checked").each(function() {
+    if (this.checked == true) {
+      var obj = new Object();
+      obj.target = this;
+      processSatellite(obj);
+      delete obj;
+    }
+  });
+
+  /* Initialize captcha on the feedback page */
+  Recaptcha.create("6Lc7j7wSAAAAAG5Pnb_3WxAQ2awmxYLop-Rnl0zK", "recaptcha_div", { theme: "white", callback: Recaptcha.focus_response_field });
+
+  /* Fetch space object cathegories registered by Dr.T.S.Kelso */
+  $.getJSON("/directory/", function(res) {
+    var frag = document.createDocumentFragment();
+      for (var id in res) {
+        var check = document.createElement("input");
+        check.type = "checkbox";
+        check.name = id;
+        check.id = id;
+        check.onchange = getSatelliteInfo;
+        var label = document.createElement("label");
+        label.setAttribute("for", id);
+        label.innerHTML = res[id];
+        var br = document.createElement("br");
+        if (id == "featured.txt") {
+          check.checked = true;
+          manualSelections.push(id);
+          frag.insertBefore(br, frag.childNodes[0]);
+          frag.insertBefore(label, br);
+          frag.insertBefore(check, label);
+        }
+        else {
+          frag.appendChild(check);
+          frag.appendChild(label);
+          frag.appendChild(document.createElement("br"));
+        }
+        }
+        $("#cats")[0].appendChild(frag);
+
+        /* Enter the main loop */
+        getSatelliteInfo();
+    });
+}
+
+
+function getSatelliteInfo(e) {
+    $("#loading").css("visibility", "visible");
+
+    /* Add/remove the activated item to the manual selections list. Required for the select all switch to behave nicely. */
+    if (e && e.target) {
+        if (e.target.checked == true) {
+            manualSelections.push(e.target.id);
+        }
+        else if (manualSelections.indexOf(e.target.id) != -1) {
+            manualSelections.splice(manualSelections.indexOf(e.target.id), 1);
+        }
+    }
+
+    /* Populate the list of selected sections */
+    var str = "";
+    $("#cats input:checked").each(function() {
+        str += this.id + ",";
+    });
+
+    /* If no sections are selected, just empty the satellite list and quit */
+    if (str == "") {
+        var sats = document.getElementById("sats");
+        while (sats.childNodes.length > 0) {
+            sats.removeChild(sats.firstChild);
+        }
+        $("#loading").css("visibility", "hidden");
+        return;
+    }
+
+    /* Fetch and process all satellites selected */
+    $.getJSON("/directory/" + str.substring(0, str.length - 1), function(res) {
+        /* Remove entries that no longer appear in the result returned by the server */
+        var rmList = [];
+        $("#sats input").each(function() {
+            if (!res[this.id]) {
+                rmList.push(this.id);
+            }
+        });
+        for (var i in rmList) {
+            $("#sats label[for=" + rmList[i] + "]").each(function () {
+                /* Erase graphic objects associated with this spacecraft */
+                if (markers[rmList[i]]) {
+                    var obj = new Object();
+                    this.previousSibling.checked = false;
+                    obj.target = this.previousSibling;
+                    processSatellite(obj);
+                    delete obj;
+                }
+                /* Destroy the controls associated with this spacecraft */
+                document.getElementById("sats").removeChild(this.previousSibling);
+                document.getElementById("sats").removeChild(this.nextSibling);
+                document.getElementById("sats").removeChild(this);
+            });
+        }
+
+        /* This is the list of satellites to ask TLEs for. It gets populated further. */
+        var str = "";
+
+        /* Add new entries */
+        var frag = document.createDocumentFragment();
+        for (var i in res) {
+            /* Does this entry already exist in our list view? */
+            if ($("#sats input#" + i).length != 0) {
+                continue;
+            }
+            /* Create the DOM elements and assign event handlers */
+            var check = document.createElement("input");
+            check.type = "checkbox";
+            check.name = i;
+            check.id = i;
+            check.onchange = processSatellite;
+            var label = document.createElement("label");
+            label.setAttribute("for", i);
+            label.innerHTML = res[i];
+            frag.appendChild(check);
+            frag.appendChild(label);
+            frag.appendChild(document.createElement("br"));
+        }
+        $("#sats")[0].appendChild(frag);
+        nameFilter();
+            /* If we're initializing the program, process the featured spacecraft */
+    if (init == true) {
+    $("#sats input").each(function() {
+        this.checked = true;
+        var obj = new Object();
+        obj.target = this;
+        processSatellite(obj);
+        delete obj;
+    });
+    }
+        init = false;
+        $("#loading").css("visibility", "hidden");
+        setTimeout("redraw()", redrawCycle);
+    });
+}
+
+/* Continuously re-render required items to make sure they are up-to-date */
+
+var redrawCycle = 2000;
+
+function setRedrawCycle() {
+    if (!IsNumeric($("input#set_redrawcycle")[0].value)) {
+        $("input#set_redrawcycle")[0].value = "200";
+    };
+    redrawCycle = parseInt($("input#set_redrawcycle")[0].value);
+}
+
+var followSatellite = "", followZoomInitialized = false;
+var selectedSatellite = "";
+
+function redraw() {
+    var dt = new Date();
+    $("#ut").text(dt.toUTCString());
+    $("#lt").text(dt.toString());
+    for (var i in markers) {
+        var satInfo = PLib.QuickFind(i);
+        markers[i].setPosition(new google.maps.LatLng(satInfo.latitude, satInfo.longitude));
+    }
+    for (var i in footprints) {
+        recalcFootprint(i);
+    }
+    for (var i in tracks) {
+        recalcTrack(i);
+    }
+    if (followSatellite != "" && markers[followSatellite]) {
+        map.panTo(markers[followSatellite].getPosition());
+        if (map.getZoom() < 6 && followZoomInitialized == false) {
+            map.setZoom(map.getZoom() + 1);
+        }
+        if (map.getZoom() == 6 && followZoomInitialized == false) {
+            followZoomInitialized = true;
+        }
+    }
+    setTimeout("redraw()", redrawCycle);
+}
+
+/* These functions allow to select all/none satellite cathegories */
+
+var allSelected = false;
+var manualSelections = [];
+
+function selectAll() {
+    if (allSelected) {
+        allSelected = false;
+        $("#cats input").each(function() {
+            /* Do not deselect manually selected items */
+            if (manualSelections.indexOf(this.id) == -1) {
+                this.checked = false;
+            }
+        });
+    }
+    else {
+        allSelected = true;
+        $("#cats input").each(function() {
+            /* Check all object types except debris */
+            if (this.id != "1999-025.txt" && this.id != "cosmos-2251-debris.txt" && this.id != "iridium-33-debris.txt") {
+                this.checked = true;
+            }
+        });
+    }
+    getSatelliteInfo();
+}
+
+/* Filter satellites in selected cathegories by names/ids matching the supplied text */
+
+function nameFilter() {
+    var expr = $("#search").attr("value");
+    if (expr == "") {
+        $("#sats input").css("display", "inline");
+        $("#sats label").css("display", "inline");
+        $("#sats br").css("display", "inline");
+        return;
+    }
+    $("#sats label").each(function() {
+        if (this.getAttribute("for").search(expr) == -1 && this.innerHTML.toLowerCase().search(expr.toLowerCase()) == -1) {
+            this.style.display = "none";
+            this.previousSibling.style.display = "none";
+            this.nextSibling.style.display = "none";
+        }
+        else {
+            this.style.display = "inline";
+            this.previousSibling.style.display = "inline";
+            this.nextSibling.style.display = "inline";
+        }
+    });
+}
+
+/* Render/erase selected satellite */
+
+function processSatellite(e) {
+    /* If a satellite has just been checked, add it to the display list */
+    if (e && e.target && e.target.checked == true) {
+        var id = e.target.id;
+        /* Download and parse TLE information received */
+        $.getJSON("/tle/" + id, function(res) {
+            for (var i in res) {
+                PLib.tleData.push(res[i]);
+            }
+            PLib.InitializeData();
+      createMarker(id, true);
+      if ($("input#set_showtracks")[0].checked) {
+          createTrack(id, true);
+      }
+      if ($("input#set_showfootprints")[0].checked) {
+          createFootprint(id, true);
+      }
+        });
+        return;
+    }
+    /* If a satellite has just been unchecked, drop it from the display list */
+    if (e && e.target && e.target.checked == false) {
+        var id = e.target.id;
+        destroyMarker(id);
+        if (tracks[id]) {
+            destroyTrack(id);
+        }
+        if (footprints[id]) {
+            destroyFootprint(id);
+        }
+         if (selectedSatellite == id) {
+         followSatellite = "";
+             infobox.close();
+         }
+        return;
+    }
+}
+
+/* Functions of the feedback page */
+
+function clearName() {
+    if ($("#feedbackName").attr("value") == "Anonymous Coward") {
+        $("#feedbackName").attr("value", "");
+    }
+}
+
+function sendFeedback() {
+    $.post("server.py/feedback", {
+        challenge : Recaptcha.get_challenge(),
+        response : Recaptcha.get_response(),
+        username : $("#feedbackName").attr("value"),
+        feedback: $("#feedbackText").attr("value")
+    }, function(status) {
+        if (status == "1") {
+            $("#feedbackResult")[0].innerHTML = "<p style='color:darkred'>Bad CAPTCHA. Please try again.</p>";
+        }
+        else {
+            $("#feedbackResult")[0].innerHTML = "<p style='color:darkgreen'>Your message has been successfully sent.</p>";
+            $("#feedbackText").attr("value", "");
+        }
+        Recaptcha.reload();
+    });
+}
+
+</script>
+</head>
+
+<body onload="initialize()">
+<div id="container">
+    <div id="logo">
+        <a href="/" style="border: none">
+            <img src="logo.gif" alt="Xientific logo" style="border: none" />
+        </a>
+    </div>
+    
+
+    <div id="header">
+        <div id="title">
+            <span class="mc1">Space</span><span class="mc2">Track</span>
+        </div>
+        <div id="nowtracking">
+            <span class="mc1">
+                Now tracking <span id="count" class="mc2"></span> objects in space.
+            </span>
+        </div>
+        <div id="clock">
+            <b class="mc1">Universal Time:</b> <span id="ut"></span>
+            <b class="mc1" style="margin-left: 20px">Local Time:</b> <span id="lt"></span>
+        </div>
+        <div id="loading">Loading, please wait...</div>
+    </div>
+
+    <div id="toolbox">
+        <h4>Filter by type:</h4>
+        <div id="cats"></div>
+        <input type="checkbox" id="select_all" onchange="selectAll()" /><label for="select_all">All types (except debris)</label>
+        <h4>Filter by name or ID:</h4>
+        <div id="searchbox"><input type="text" id="search" onkeyup="nameFilter()" /></div>
+        <br /><hr />
+        <h4>Matching objects</h4>
+        <div id="sats"></div>
+    </div>
+
+
+    <div id="menu">
+        <span class="section" id="_tracker">Tracker</span>&nbsp;
+        <span class="section" id="_settings">Settings</span>&nbsp;
+        <span class="section" id="_about">About</span>&nbsp;
+        <span class="section" id="_feedback">Feedback</span>&nbsp;
+        <span class="section" id="_development">Development</span>&nbsp;
+    </div>
+
+    <div id="tracker_page" class="page"></div>
+
+    <div id="settings_page" class="page">
+        <div>
+            <h3>Tracker Settings</h3>
+            <input type="checkbox" id="set_shownames" onchange="toggleMarkerMode()" />
+            <label for="set_shownames">Show satellite names instead of icons</label><br/>
+            <input type="checkbox" id="set_showfootprints" onchange="toggleFootprints()" />
+            <label for="set_showfootprints">Show satellite footprints</label><br/>
+            <input type="checkbox" id="set_showtracks" onchange="toggleTracks()" />
+            <label for="set_showtracks">Show satellite trajectories</label><br/>
+            <ul>
+                <li>
+                    <label for="set_trackprecision">Precision of trajectory calculation (seconds):</label>
+                    <input type="text" id="set_trackprecision" size="3" value="25" onchange="setTrackPrecision()" />
+                </li>
+                <li>
+                    <label for="set_footprintprecision">Precision of footprint calculation (number of points):</label>
+                    <input type="text" id="set_footprintprecision" size="3" value="60" onchange="setFootprintPrecision()" />
+                </li>
+                <li>
+                    <label for="set_redrawcycle">Duration of redraw cycle (milliseconds):</label>
+                    <input type="text" id="set_redrawcycle" size="3" value="2000" onchange="setRedrawCycle()" />
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <div id="about_page" class="page">
+        <h3>
+            <span class="mc1">About Space</span><span class="mc2">Tracker</span>
+        </h3>
+        <p>This site is an online satellite tracking system that allows you to view in real time positions of various space objects in Earth's orbit, such as the International Space Station (ISS), the Space Shuttle, GPS and Iridium satellite constellations, and over 5000 spacecraft and debris. You can also view visibility footprints and tracks of space objects predicted using data collected by NORAD and usually updated on a daily basis. The precision of satellite footprint and track calculation can be customized to your needs.<p>
+        <p>Many powerful and interesting features are planned; if you have your own ideas, please use the Feedback tab to submit them!</p>
+        <ul>
+            <li>Copyright <b>David Parunakian</b> (Skobeltsyn institute of nuclear physics, <a href="http://www.msu.ru/en/">MSU</a>), 2009-2011.</li>
+            <li>NORAD TLEs maintained by <b>Dr.T.S.Kelso</b> (<a href="http://www.celestrak.com">Celestrak</a>).</li>
+            <!--<li><a href="http://www.senojflags.com">Country flag</a> images from <a href="http://www.senojflags.com">Flags of all Countries</a>.</li>-->
+        </ul>
+    </div>
+
+    <div id="feedback_page" class="page">
+        <h3>Report bugs and suggest features</h3>
+        <p class="quote"><i>What do you want?</i><br/><span>-Mr.Morden</span></p>
+        <div>
+
+            <span>Your name:</span><br/>
+            <input id="feedbackName" type="text" size="36" value="Anonymous Coward" onclick="clearName()" /><br/><br/>
+
+            <span>Your feedback:</span><br/>
+            <textarea id="feedbackText" cols="36" rows="10"></textarea><br/><br/>
+
+            <span>Your Turing test result:</span><br/>
+            <div id="recaptcha_div"></div>
+
+            <input type="button" value="Send" id="feedback_btn" onclick="sendFeedback()">
+
+            <span id="feedbackResult"></span>
+
+        </div>
+    </div>
+
+    <div id="development_page" class="page">
+        <h3>Development roadmap</h3>
+        <ol id="todolist">
+            <h4>Features</h4>
+            <li>Uploadable and approvable icons</li>
+            <li>NSSDC NMC mirror</li>
+            <li>Fix HTML layout</li>
+            <li>Fix feedback</li>
+            <li>Fix resizing the window on pages other than Tracker</li>
+            <li>Fix satellite name icons</li>
+            <li>Fix launch dates and country flags</li>
+            <li>Make V3-compatible version of the day/night overlay</li>
+            <li>Use a GeoIP service</li>
+            <li>Mirror NSSDC content with cron</li>
+
+            <h4>Optimizations</h4>
+            <li>Download calculated predictions from the server cache, if they are available</li>
+            <li>Improve footprint calculation performance</li>
+
+            <h4>Uninterrupted workflow fixes</h4>
+            <li>Regularly download and apply new TLEs and spacecraft info</li>
+            <li>Manage updates to satellite and section lists (new/decayed sats in lists)</li>
+            <li>Process decays of objects currently being tracked</li>
+
+            <h4>Special sauce</h4>
+            <li>Ajax &amp; HTML APIs for tracking a single satellite by its id in an iframe</li>
+            <li>Set icons, trajectory and footprint colors for individual satellites</li>
+            <li>Personal accounts with customizations</li>
+            <li>Predict tools &amp; visualizations</li>
+            <li>RSS with launch/decay announcements</li>
+        </ol>
+    </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,224 @@
+/* http://meyerweb.com/eric/tools/css/reset/ 
+   v2.0 | 20110126
+   License: none (public domain)
+*/
+
+html, body, div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+b, u, i, center,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td,
+article, aside, canvas, details, embed, 
+figure, figcaption, footer, header, hgroup, 
+menu, nav, output, ruby, section, summary,
+time, mark, audio, video {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	font-size: 100%;
+	font: inherit;
+	vertical-align: baseline;
+}
+/* HTML5 display-role reset for older browsers */
+article, aside, details, figcaption, figure, 
+footer, header, hgroup, menu, nav, section {
+	display: block;
+}
+body {
+	line-height: 1;
+}
+ol, ul {
+	list-style: none;
+}
+blockquote, q {
+	quotes: none;
+}
+blockquote:before, blockquote:after,
+q:before, q:after {
+	content: '';
+	content: none;
+}
+table {
+	border-collapse: collapse;
+	border-spacing: 0;
+}
+
+/* end reset */
+
+body {
+    background-color: white;
+    color: black;
+    font-size: 14px;
+    font-family: 'sans-serif';
+}
+
+
+div#logo {
+    float: left;
+    width: 250px;
+    text-align: center;
+}
+
+div#header {
+    overflow: hidden;
+}
+
+div#toolbox {
+    float: left;
+	width: 250px;
+}
+
+div.page {
+    margin-left: 250px;
+	display: none;
+	height: 750px;
+	border: 1px solid black;
+	overflow: hidden;
+}
+
+
+
+div#sats, div#cats, div#searchbox {
+	margin-right:5px;
+	margin-left:5px;
+}
+
+div#sats, div#cats {
+	overflow-x: hidden;
+	overflow-y: scroll;
+	border: 1px solid gray;
+}
+
+div#searchbox > input {
+	width: 100%;
+}
+
+div#cats {
+	height: 218px;
+}
+
+input[type='text'] {
+	border: 1px solid gray;
+}
+
+span#loading {
+	visibility: hidden;
+}
+
+div#clock {
+	font-size: 14px;
+}
+
+#title {
+	font-size: 24px;
+	font-weight: bold;
+	font-family: 'Verdana';
+}
+
+
+#nowtracking {
+	font-size: 14px;
+	font-weight: bold;
+}
+
+.mc1 {
+	color: #404040;
+}
+
+.mc2 {
+	color: #0d609e;
+}
+
+span.section {
+	cursor: pointer;
+	font-weight: bold;
+	text-decoration: underline;
+	border: 1px solid white;
+}
+
+span.section:hover {
+	background-color: #e0e0ff;
+	border: 1px solid #a0a0ff;
+}
+
+h3 {
+	text-align: center;
+	margin-top: 10px;
+	margin-left: 10px;
+}
+
+h4 {
+	text-align: center;
+	margin-bottom: 2px;
+	margin-top: 10px;
+	font-weight: bold;
+}
+
+div#container {
+	width: 100%;
+	height: 100%;
+}
+
+/*
+
+
+div#container > div, div#container > img {
+	float: left;
+}
+
+
+
+div#searchbox {
+	text-align: center;
+    width: 100%;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+p.quote {
+	text-align: right;
+	margin-right: 10px;
+}
+
+p.quote > span {
+	font-size: 80%;
+}
+
+div#settings_page > div {
+	padding: 6px;
+}
+
+div#feedback_page > div {
+	width: 300px;
+	text-align: left;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+
+
+
+ul {
+	margin: 2px;
+	padding-left: 23px;
+}
+
+ul > li {
+	text-indent: -5px;
+}*/
