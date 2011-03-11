@@ -40,10 +40,10 @@ function pollHash() {
     if (location.hash == currentPage) {
         return;
     }
-    $("span" + currentPage).css("color", "black");
+    $("span" + currentPage.replace("#", "#_")).css("color", "black");
     $("div" + currentPage + "_page").css("display", "none");
     currentPage = location.hash;
-    $("span" + currentPage).css("color", "#0D609E");
+    $("span" + currentPage.replace("#", "#_")).css("color", "#0D609E");
     $("div" + currentPage + "_page").css("display", "block");
 }
 
@@ -171,14 +171,14 @@ function cart2sph(vector) {
 function initialize() {
     /* Initialize container size */
     $("#sats").css("height", ($(window).height() - 460) + "px");
-    $(".page").css("height", ($(window).height() - 110) + "px");
+    $(".page").css("height", ($(window).height() - 122) + "px");
     $(".page").css("width", ($(window).width() - 255) + "px");
     $(window).bind("resize", function() {
         $("#sats").css("height", ($(window).height() - 460) + "px");
-        $(".page").css("height", ($(window).height() - 110) + "px");
+        $(".page").css("height", ($(window).height() - 122) + "px");
         $(".page").css("width", ($(window).width() - 255) + "px");
         if (location.hash != "#tracker") {
-            // FIXME
+            $("span#_tracker").bind("click", delayedMapInit);
         }
     });
 
@@ -194,15 +194,15 @@ function initialize() {
     if (location.hash == "") {
         location.hash = "tracker";
     }
-    currentPage = location.hash.replace("#", "#_");
-    $("span" + currentPage).css("color", "#0D609E");
+    currentPage = location.hash;
+    $("span" + currentPage.replace("#", "#_")).css("color", "#0D609E");
     $("div" + currentPage + "_page").css("display", "block");
     $("span.section").click(function(e) {
-        $("span" + currentPage).css("color", "black");
+        $("span" + currentPage.replace("#", "#_")).css("color", "black");
         $("div" + currentPage + "_page").css("display", "none");
         location.hash = "#" + this.id.replace("_", "");
         currentPage = location.hash;
-        $("span" + currentPage).css("color", "#0D609E");
+        $("span" + currentPage.replace("#", "#_")).css("color", "#0D609E");
         $("div" + currentPage + "_page").css("display", "block");
         e.stopPropagation();
         return false;
@@ -210,15 +210,16 @@ function initialize() {
 
   /* Initializing the maps module when the div is not visible leads to very buggy behavior */
     if (location.hash == "#tracker") {
-        setTimeout("initMaps()", 500);
+        delayedMapInit();
     }
     else {
-        $("span#_tracker").bind("click", function() {
-          setTimeout("initMaps()", 500);
-        });
+        $("span#_tracker").bind("click", delayedMapInit);
     }
 }
 
+function delayedMapInit() {
+    setTimeout("initMaps()", 500);
+}
 
 function initMaps() {
 
@@ -261,7 +262,7 @@ function initMaps() {
   /* Configure the predict library */
   PLib.configureGroundStation(0, 0);
 
-  $("span#_tracker").unbind("click", initMaps);
+  $("span#_tracker").unbind("click", delayedMapInit);
 
   infobox = new google.maps.InfoWindow();
 

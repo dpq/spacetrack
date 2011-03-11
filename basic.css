@@ -59,7 +59,7 @@ body {
 
 div#logo {
     float: left;
-    width: 250px;
+    width: 248px;
     text-align: center;
 }
 
@@ -69,18 +69,21 @@ div#header {
 
 div#toolbox {
     float: left;
-	width: 250px;
+	width: 248px;
 }
 
 div.page {
-    margin-left: 250px;
+	margin-left: 250px;
 	display: none;
-	height: 750px;
+	height: 738px;
 	border: 1px solid black;
 	overflow: hidden;
 }
 
-
+div#menu {
+    margin-top: 7px;
+    margin-bottom: 5px;
+}
 
 div#sats, div#cats, div#searchbox {
 	margin-right:5px;
