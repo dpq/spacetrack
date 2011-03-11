@@ -31,9 +31,9 @@ footer, header, hgroup, menu, nav, section {
 body {
 	line-height: 1;
 }
-ol, ul {
+/*ol, ul {
 	list-style: none;
-}
+}*/
 blockquote, q {
 	quotes: none;
 }
@@ -151,6 +151,7 @@ h3 {
 	text-align: center;
 	margin-top: 10px;
 	margin-left: 10px;
+      font-weight: bold;
 }
 
 h4 {
@@ -165,62 +166,39 @@ div#container {
 	height: 100%;
 }
 
-/*
-
-
-div#container > div, div#container > img {
-	float: left;
-}
-
-
-
-div#searchbox {
-	text-align: center;
-    width: 100%;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 p.quote {
-	text-align: right;
-	margin-right: 10px;
+      text-align: right;
+      margin-right: 10px;
 }
 
 p.quote > span {
-	font-size: 80%;
+      font-size: 80%;
 }
 
 div#settings_page > div {
-	padding: 6px;
+      padding: 6px;
 }
 
 div#feedback_page > div {
-	width: 300px;
-	text-align: left;
-	margin-left: auto;
-	margin-right: auto;
+      width: 300px;
+      text-align: left;
+      margin-left: auto;
+      margin-right: auto;
 }
-
-
-
 
 ul {
 	margin: 2px;
-	padding-left: 23px;
+	padding-left: 20px;
 }
 
 ul > li {
-	text-indent: -5px;
-}*/
+	text-indent: 1px;
+}
+
+ol {
+    margin-left: 40px;
+}
+
+ol > li {
+    padding-left: 10px;
+}
