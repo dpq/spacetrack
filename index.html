@@ -172,11 +172,11 @@ function initialize() {
     /* Initialize container size */
     $("#sats").css("height", ($(window).height() - 460) + "px");
     $(".page").css("height", ($(window).height() - 122) + "px");
-    $(".page").css("width", ($(window).width() - 255) + "px");
+    $(".page").css("width", ($(window).width() - 270) + "px");
     $(window).bind("resize", function() {
         $("#sats").css("height", ($(window).height() - 460) + "px");
         $(".page").css("height", ($(window).height() - 122) + "px");
-        $(".page").css("width", ($(window).width() - 255) + "px");
+        $(".page").css("width", ($(window).width() - 270) + "px");
         if (location.hash != "#tracker") {
             $("span#_tracker").bind("click", delayedMapInit);
         }
@@ -280,7 +280,8 @@ function initMaps() {
 
   /* Fetch space object cathegories registered by Dr.T.S.Kelso */
   $.getJSON("/directory/", function(res) {
-    var frag = document.createDocumentFragment();
+      var frag = document.createDocumentFragment();
+      $("#cats").empty();
       for (var id in res) {
         var check = document.createElement("input");
         check.type = "checkbox";
