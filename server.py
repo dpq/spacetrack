@@ -29,6 +29,7 @@ class Satellites(webapp.RequestHandler):
         for section in sections:
             if section == "featured.txt":
                 res[35865] = "METEOR-M"
+                res[37344] = "ELEKTRO-L1"
                 continue
             query = model.Object.gql("where section = :1 and orbiting = :2 order by noradid asc", section, True)
             while True:
