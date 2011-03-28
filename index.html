@@ -43,6 +43,9 @@ function pollHash() {
     $("span" + currentPage.replace("#", "#_")).css("color", "black");
     $("div" + currentPage + "_page").css("display", "none");
     currentPage = location.hash;
+    if (location.hash == "") {
+        location.hash = "tracker";
+    }
     $("span" + currentPage.replace("#", "#_")).css("color", "#0D609E");
     $("div" + currentPage + "_page").css("display", "block");
 }
@@ -621,9 +624,9 @@ function sendFeedback() {
             <h3>Tracker Settings</h3>
             <input type="checkbox" id="set_shownames" onchange="toggleMarkerMode()" />
             <label for="set_shownames">Show satellite names instead of icons</label><br/>
-            <input type="checkbox" id="set_showfootprints" onchange="toggleFootprints()" />
+            <input type="checkbox" checked="checked" id="set_showfootprints" onchange="toggleFootprints()" />
             <label for="set_showfootprints">Show satellite footprints</label><br/>
-            <input type="checkbox" id="set_showtracks" onchange="toggleTracks()" />
+            <input type="checkbox" checked="checked" id="set_showtracks" onchange="toggleTracks()" />
             <label for="set_showtracks">Show satellite trajectories</label><br/>
             <ul>
                 <li>

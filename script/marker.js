@@ -40,31 +40,30 @@ function createMarker(id, flash) {
  		});
  	}
 	else {
-		$.get("/icon/" + id, function(url) {
-			if (url == "") {
-				markers[id] = new google.maps.Marker({position: position, title: title });
-			}
-			else {
-				var icon = new google.maps.MarkerImage(url);
-				markers[id] = new google.maps.Marker({position: position, title: title, icon: icon });
-			}
-			createInfobox(id);
-			google.maps.event.addListener(markers[id], "click", function() {
-				selectedSatellite = id;
+        if ($.inArray(id, ['10967', '25544', '33504', '35865', '35868', '37344']) != -1) {
+            var icon = new google.maps.MarkerImage("/icon/" + id);
+            markers[id] = new google.maps.Marker({position: position, title: title, icon: icon, map: map });
+        }
+        else {
+            markers[id] = new google.maps.Marker({position: position, title: title, map: map });
+        }
+        createInfobox(id);
+        google.maps.event.addListener(markers[id], "click", function() {
+        selectedSatellite = id;
         var infobox = new google.maps.InfoWindow({content: popups[id], position: markers[id].getPosition()});
         infobox.close();
-   			infobox.setContent(popups[id]);
-   			infobox.open(map, markers[id]);
-			});
-			google.maps.event.addListener(markers[id], "mouseover", function() {
-				highlightTrack(id);
-				highlightFootprint(id);
-			});
-			google.maps.event.addListener(markers[id], "mouseout", function() {
-				dimTrack(id);
-				dimFootprint(id);
-			});
-		});
+        infobox.setContent(popups[id]);
+        infobox.open(map, markers[id]);
+        });
+        google.maps.event.addListener(markers[id], "mouseover", function() {
+            highlightTrack(id);
+            highlightFootprint(id);
+        });
+        google.maps.event.addListener(markers[id], "mouseout", function() {
+            dimTrack(id);
+            dimFootprint(id);
+        });
+        //});
 	}
 }
 

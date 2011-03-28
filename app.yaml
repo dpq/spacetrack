@@ -40,9 +40,13 @@ handlers:
   static_files: img/home.png
   upload: img/home\.png
 
-- url: /(.*)
-  static_files: comingsoon.html
-  upload: comingsoon.html
+- url: /icon
+  static_dir: icon
+  mime_type: image/png
+
+#- url: /(.*)
+#  static_files: comingsoon.html
+#  upload: comingsoon.html
 
 
 derived_file_type:
